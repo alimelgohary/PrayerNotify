@@ -11,49 +11,66 @@ namespace PrayerNotify
 {
     internal class Program
     {
-        static string[] hijriMonth = new string[13] { "", "Muharram", "Safar", "Rabi3 Awal", "Rabi3 Thany", "Gamad Awal", "Gamad Thany", "Ragab", "Sha3ban", "Ramadan", "Shawal", "Zo Elqe3da", "Zo El7egga" };
-        static string ClearReturnToBegining = new StringBuilder().Append("\r").Append(' ', Console.BufferWidth).Append("\r").ToString();
-        static HttpClient client = new HttpClient();
-        static async Task Main(string[] args)
+        static readonly string[] hijriMonth = new string[13] { "", "Muharram", "Safar", "Rabi3 Awal", "Rabi3 Thany", "Gamad Awal", "Gamad Thany", "Ragab", "Sha3ban", "Ramadan", "Shawal", "Zo Elqe3da", "Zo El7egga" };
+        static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
+        static DateTime dt;
+        static readonly int remindMeBefore = 5;
+        static readonly HttpClient client = new();
+        static async Task Main()
         {
             Console.CursorVisible = false;
-            var dt = DateTime.Now;
+
+            dt = DateTime.Now;
             Root? r = await TryGetRootAsync("31.21452", "31.35798", (int)Methods.Egyptian_General_Authority_of_Survey);
 
             if (r == null || r?.code != 200)
             {
                 ErrorHappened("Something Went Wrong");
+                return;
             }
 
-            Datum d = r.data[dt.Day - 1];
+            int currentDay;
+            var ishaTime = TimeOnly.Parse(r.data[dt.Day - 1].timings.Isha[..5]);
+            DateTime ishaDateTime = new(dt.Year, dt.Month, dt.Day, ishaTime.Hour, ishaTime.Minute, ishaTime.Second);
+            if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(Prayer.salatIqama["Isha"] - remindMeBefore))  //Last iqama in day ocurred?
+            {
+                currentDay = dt.Day + 1;
+            }
+            else
+            {
+                currentDay = dt.Day;
+            }
 
-            Console.WriteLine($"{dt.DayOfWeek} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {dt.ToString("dd MMM yyyy")}{Environment.NewLine}");
+            Datum d = r.data[currentDay - 1];
 
-            Prayer[] prayers = new Prayer[6];
-            
-            FillTimes(prayers, d);
+            Console.WriteLine($"{d.date.gregorian.weekday.en} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {d.date.readable}{Environment.NewLine}");
 
-            PrintTimes(prayers);
+            Prayer[] prayers = Prayer.GetPrayers(d);
+
+            Prayer.PrintTimes(prayers);
+
             Console.WriteLine(Environment.NewLine);
-            AlarmClock[] alarms = new AlarmClock[12];
-            CreateAlarmsForPrayerAndIqama(dt, prayers, alarms);
 
-            Timer timer = new Timer();
+            AlarmClock[] alarms = new AlarmClock[12];
+
+            CreateAlarmsForPrayerAndIqama(prayers, alarms);
+
+            // Remaining time for Salat
+            Timer timer = new();
             timer.Elapsed += new ElapsedEventHandler((sender, e) =>
             {
-                var dt = DateTime.Now;
+
                 TimeSpan t;
                 string message;
                 for (int i = 0; i < prayers.Length; i++)
                 {
-                    t = new DateTime(dt.Year, dt.Month, dt.Day, prayers[i].Time.Hour, prayers[i].Time.Minute, 0) - DateTime.Now;
+                    t = prayers[i].Time - DateTime.Now;
                     if (t.TotalSeconds > 0)
                     {
                         Console.CursorTop--;
                         Console.Write(ClearReturnToBegining);
-                        message = $"Remaining time for {Prayer.salatIqama.Keys.ElementAt(i)} is {t.ToString(@"hh\:mm\:ss")}";
+                        message = $"Remaining time for {Prayer.salatIqama.Keys.ElementAt(i)} is {t:hh\\:mm\\:ss}";
                         Console.Write(message);
-
                         break;
                     }
                 }
@@ -61,62 +78,9 @@ namespace PrayerNotify
             timer.Interval = 1000;
             timer.Start();
 
-            CreateNewDayAlarm(dt);
             Console.ReadLine();
 
         }
-
-        private static void CreateAlarmsForPrayerAndIqama(DateTime dt, Prayer[] times, AlarmClock[] alarms)
-        {
-            int j = 0;
-            foreach (var item in times)
-            {
-                
-                alarms[j] = new AlarmClock(new DateTime(dt.Year, dt.Month, dt.Day, item.Time.Hour, item.Time.Minute, 0));
-                alarms[j].alarmEvent += AlarmMe;
-
-                int iqama = item.Iqama != 0 ? item.Iqama - 5 : 0;
-                TimeOnly t = item.Time.Add(TimeSpan.FromMinutes(iqama)); // time before iqama by 5 min
-
-                j++;
-                alarms[j] = new AlarmClock(new DateTime(dt.Year, dt.Month, dt.Day, t.Hour, t.Minute, 0));
-                alarms[j].alarmEvent += AlarmMe;
-                j++;
-            }
-        }
-        static void AlarmMe(object? sender, EventArgs? e)
-        {
-            Console.WriteLine($"Alarming at {DateTime.Now.ToString("hh:mm:ss")}");
-
-            for (int i = 0; i < 3; i++)
-            {
-                Console.Beep();
-            }
-        }
-        private static void CreateNewDayAlarm(DateTime dt)
-        {
-            AlarmClock clock = new AlarmClock(new DateTime(dt.Year, dt.Month, dt.Day + 1));
-            clock.alarmEvent += (sender, e) => RestartApp();
-        }
-
-        private static void PrintTimes(Prayer[] times)
-        {
-            foreach (var item in times)
-            {
-                Console.WriteLine($"\t\t{item.Name}: {item.Time:hh:mm tt}");
-            }
-        }
-
-        private static void FillTimes(Prayer[] prayers, Datum d)
-        {
-            prayers[0] = new Prayer("Fajr", TimeOnly.Parse(d.timings.Fajr[..5]));
-            prayers[1] = new Prayer("Sunrise", TimeOnly.Parse(d.timings.Sunrise[..5]));
-            prayers[2] = new Prayer("Dhuhr", TimeOnly.Parse(d.timings.Dhuhr[..5]));
-            prayers[3] = new Prayer("Asr", TimeOnly.Parse(d.timings.Asr[..5]));
-            prayers[4] = new Prayer("Maghrib", TimeOnly.Parse(d.timings.Maghrib[..5]));
-            prayers[5] = new Prayer("Isha", TimeOnly.Parse(d.timings.Isha[..5]));
-        }
-
         static async Task<Root?> TryGetRootAsync(string lat, string lng, int method)
         {
             var dt = DateTime.Now;
@@ -132,6 +96,53 @@ namespace PrayerNotify
             }
             return r;
         }
+        static async Task<Root?> GetRootAsync(string path)
+        {
+
+            Root? root = null;
+            HttpResponseMessage response = await client.GetAsync(path);
+            if (response.IsSuccessStatusCode)
+            {
+                root = await response.Content.ReadFromJsonAsync<Root>();
+            }
+            return root;
+        }
+        private static void CreateAlarmsForPrayerAndIqama(Prayer[] times, AlarmClock[] alarms)
+        {
+            int j = 0;
+            foreach (var item in times)
+            {
+
+                alarms[j] = new AlarmClock(item.Time);
+                alarms[j].alarmEvent += AlarmMe;
+
+                int iqamaRemaining = item.Iqama != 0
+                                   ? item.Iqama - remindMeBefore
+                                   : 0;
+                DateTime beforeIqama = item.Time.AddMinutes(iqamaRemaining); // time before iqama by 5 min
+
+                j++;
+                alarms[j] = new AlarmClock(beforeIqama);
+                alarms[j].alarmEvent += AlarmMe;
+                if (j == alarms.Length - 1)
+                {
+                    alarms[j].alarmEvent += new ElapsedEventHandler((sender, e) =>
+                    {
+                        RestartApp();
+                    });
+                }
+                j++;
+
+            }
+        }
+        static void AlarmMe(object? sender, ElapsedEventArgs? e)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                Console.Beep();
+            }
+        }
+        
         static void ErrorHappened(string message)
         {
             Console.WriteLine(message);
@@ -153,17 +164,6 @@ namespace PrayerNotify
             Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
-        static async Task<Root?> GetRootAsync(string path)
-        {
-
-            Root? root = null;
-            HttpResponseMessage response = await client.GetAsync(path);
-            if (response.IsSuccessStatusCode)
-            {
-                root = await response.Content.ReadFromJsonAsync<Root>();
-            }
-            return root;
-        }
         enum Methods
         {
             Shia_Ithna_Ansari = 0,
@@ -182,19 +182,19 @@ namespace PrayerNotify
             Spiritual_Administration_of_Muslims_of_Russia = 14,
             Moonsighting_Committee_Worldwide = 15
         }
-        
+
 
     }
 
     public class AlarmClock
     {
         public ElapsedEventHandler? alarmEvent;
-        private Timer timer;
+        private readonly Timer timer;
 
         public AlarmClock(DateTime alarmTime)
         {
             timer = new Timer();
-            timer.Elapsed += timer_Elapsed;
+            timer.Elapsed += Timer_Elapsed;
             double remaining = (alarmTime - DateTime.Now).TotalMilliseconds;
             if (remaining < 0)
             {
@@ -209,7 +209,7 @@ namespace PrayerNotify
 
         }
 
-        void timer_Elapsed(object? sender, ElapsedEventArgs? e)
+        void Timer_Elapsed(object? sender, ElapsedEventArgs? e)
         {
             alarmEvent?.Invoke(this, e);
             timer.Stop();
