@@ -19,7 +19,7 @@ namespace PrayerNotify
         static async Task Main()
         {
             Console.CursorVisible = false;
-
+            
             dt = DateTime.Now;
             Root? r = await TryGetRootAsync("31.21452", "31.35798", (int)Methods.Egyptian_General_Authority_of_Survey);
 
