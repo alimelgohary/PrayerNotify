@@ -6,6 +6,7 @@ using System.Threading;
 using Timer = System.Timers.Timer;
 using System.Timers;
 using System.Text;
+using System.Text.Json;
 
 namespace PrayerNotify
 {
@@ -14,14 +15,57 @@ namespace PrayerNotify
         static readonly string[] hijriMonth = new string[13] { "", "Muharram", "Safar", "Rabi3 Awal", "Rabi3 Thany", "Gamad Awal", "Gamad Thany", "Ragab", "Sha3ban", "Ramadan", "Shawal", "Zo Elqe3da", "Zo El7egga" };
         static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
         static DateTime dt;
-        static readonly int remindMeBefore = 5;
         static readonly HttpClient client = new();
+        static string settingsPath = "settings.json";
         static async Task Main()
         {
             Console.CursorVisible = false;
-            
+            Settings s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(settingsPath));
+            string lat = s.Lat;
+            string lng = s.Lng; 
+            int method = s.Method;
+            int remindMeBefore = s.RemindMeBefore;
+            double dd;
+            if (lat == String.Empty || lng == String.Empty || method == 0)
+            {
+                Console.WriteLine("No settings present");
+            lat: Console.Write("Enter City Latitude: ");
+                lat = Console.ReadLine();
+                if (!double.TryParse(lat, out dd))
+                {
+                    goto lat;
+                }
+                s.Lat = lat;
+
+            lng: Console.Write("Enter City Longtuide: ");
+                lng = Console.ReadLine();
+                if (!double.TryParse(lat, out dd))
+                {
+                    goto lng;
+                }
+                s.Lng = lng;
+            method: Console.WriteLine("Methods: ");
+                Array.ForEach(Enum.GetNames(typeof(Settings.Methods)), x => Console.WriteLine($"\t\t{(int)Enum.Parse(typeof(Settings.Methods), x)} - {x}"));
+                Console.Write("Enter method number: ");
+                if (!int.TryParse(Console.ReadLine(), out method))
+                {
+                    goto method;
+                }
+                s.Method = method;
+
+            remind: Console.Write("Alarm me before Iqama by (min): ");
+                if (!int.TryParse(Console.ReadLine(), out remindMeBefore))
+                {
+                    goto remind;
+                }
+                s.RemindMeBefore = remindMeBefore;
+
+                File.WriteAllText(settingsPath, JsonSerializer.Serialize(s));
+            }
+
             dt = DateTime.Now;
-            Root? r = await TryGetRootAsync("31.21452", "31.35798", (int)Methods.Egyptian_General_Authority_of_Survey);
+            //Root? r = await TryGetRootAsync("31.21452", "31.35798", (int)Methods.Egyptian_General_Authority_of_Survey);
+            Root? r = await TryGetRootAsync(lat, lng, method);
 
             if (r == null || r?.code != 200)
             {
@@ -43,7 +87,7 @@ namespace PrayerNotify
 
             Datum d = r.data[currentDay - 1];
 
-            Console.WriteLine($"{d.date.gregorian.weekday.en} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {d.date.readable}{Environment.NewLine}");
+            Console.WriteLine($"{d.date.gregorian.weekday.en} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {d.date.readable} \\\\ Lat: {lat}, Lng: {lng}{Environment.NewLine} ");
 
             Prayer[] prayers = Prayer.GetPrayers(d);
 
@@ -53,7 +97,7 @@ namespace PrayerNotify
 
             AlarmClock[] alarms = new AlarmClock[12];
 
-            CreateAlarmsForPrayerAndIqama(prayers, alarms);
+            CreateAlarmsForPrayerAndIqama(prayers, alarms, remindMeBefore);
 
             // Remaining time for Salat
             Timer timer = new();
@@ -70,7 +114,7 @@ namespace PrayerNotify
                         Console.CursorTop--;
                         Console.Write(ClearReturnToBegining);
                         message = $"Remaining time for {Prayer.salatIqama.Keys.ElementAt(i)} is {t:hh\\:mm\\:ss}";
-                        Console.Write(message + new string(' ', Console.BufferWidth - message.Length-1));
+                        Console.Write(message + new string(' ', Console.BufferWidth - message.Length - 1));
                         break;
                     }
                 }
@@ -107,7 +151,7 @@ namespace PrayerNotify
             }
             return root;
         }
-        private static void CreateAlarmsForPrayerAndIqama(Prayer[] times, AlarmClock[] alarms)
+        private static void CreateAlarmsForPrayerAndIqama(Prayer[] times, AlarmClock[] alarms, int remindMeBefore)
         {
             int j = 0;
             foreach (var item in times)
@@ -142,7 +186,7 @@ namespace PrayerNotify
                 Console.Beep();
             }
         }
-        
+
         static void ErrorHappened(string message)
         {
             Console.WriteLine(message);
@@ -164,24 +208,7 @@ namespace PrayerNotify
             Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
-        enum Methods
-        {
-            Shia_Ithna_Ansari = 0,
-            University_of_Islamic_Sciences_Karachi = 1,
-            Islamic_Society_of_North_America = 2,
-            Muslim_World_League = 3,
-            Umm_Al_Qura_University_Makkah = 4,
-            Egyptian_General_Authority_of_Survey = 5,
-            Institute_of_Geophysics_University_of_Tehran = 7,
-            Gulf_Region = 8,
-            Kuwait = 9,
-            Qatar = 10,
-            Majlis_Ugama_Islam_Singapura_Singapore = 11,
-            Union_Organization_islamic_de_France = 12,
-            Diyanet_İşleri_Başkanlığı_Turkey = 13,
-            Spiritual_Administration_of_Muslims_of_Russia = 14,
-            Moonsighting_Committee_Worldwide = 15
-        }
+
 
 
     }
