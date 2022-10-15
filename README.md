@@ -24,3 +24,6 @@ You may need to Download [.NET Runtime](https://dotnet.microsoft.com/en-us/downl
 #### - Print **Live** Remaining Time for next prayer
 
 #### - Beeps when alarm goes off
+
+
+Add a shortcut to the application at `%AppData%\Microsoft\Windows\Start Menu\Programs\Startup` for the best Experience
