@@ -1,6 +1,6 @@
 # PrayerNotify
 
-This Application is a C# Console Application that shows the user all muslim prayer (الصلاة) times according to some [Coordination](https://www.geodatos.net/en/coordinates) and a method of calculation.
+This Application is a C# Console Application that shows the user all muslim prayer (الصلاة) times according to some [Decimal Coordinates](https://www.geodatos.net/en/coordinates) and a method of calculation.
 
 It shows the remaining time for prayer
 
@@ -8,6 +8,7 @@ It also reminds user before prayer iqama (إقامة الصلاة) by some speci
 
 It's written in C# .Net 6
 
+	--- You may need to Download [.NET Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
 ## Features
 
