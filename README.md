@@ -13,14 +13,14 @@ You may need to Download [.NET Runtime](https://dotnet.microsoft.com/en-us/downl
 
 ## Features
 
-### - Choose specific settings (Location, Method, Iqama times, Reminder time before iqama)
+#### - Choose specific settings (Location, Method, Iqama times, Reminder time before iqama)
 
-### - Print Gregorian Date
+#### - Print Gregorian Date
 
-### - Print Hijri Day, Month, Year
+#### - Print Hijri Day, Month, Year
 
-### - Print Prayer Times including Sunrise
+#### - Print Prayer Times including Sunrise
 
-### - Print **Live** Remaining Time for next prayer
+#### - Print **Live** Remaining Time for next prayer
 
-### - Beeps when alarm goes off
+#### - Beeps when alarm goes off
