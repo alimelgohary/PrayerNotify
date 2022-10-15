@@ -51,7 +51,7 @@ internal class Prayer
     {
         foreach (var item in times)
         {
-            Console.WriteLine($"\t\t{item.Name}: {item.Time:hh:mm tt}");
+            Program.ConsoleWriteLineColor($"\t\t{item.Name}: {item.Time:hh:mm tt}");
         }
     }
 }

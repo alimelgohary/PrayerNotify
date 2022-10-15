@@ -36,7 +36,7 @@ namespace PrayerNotify
             int currentDay;
             var ishaTime = TimeOnly.Parse(r.data[dt.Day - 1].timings.Isha[..5]);
             DateTime ishaDateTime = new(dt.Year, dt.Month, dt.Day, ishaTime.Hour, ishaTime.Minute, ishaTime.Second);
-            if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(iqama.Find(x=>x.Name == Prayer.salats[Prayer.salats.GetUpperBound(0)]).Value - remindMeBefore))  //Last iqama in day ocurred?
+            if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(iqama.Find(x => x.Name == Prayer.salats[Prayer.salats.GetUpperBound(0)]).Value - remindMeBefore))  //Last iqama in day ocurred?
             {
                 currentDay = dt.Day + 1;
             }
@@ -250,47 +250,15 @@ namespace PrayerNotify
             Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
-        static void ConsoleWriteLineColor(string message)
+        public static void ConsoleWriteLineColor(string message)
         {
             ConsoleWriteColor(message + '\n');
         }
-        static void ConsoleWriteColor(string message)
+        public static void ConsoleWriteColor(string message)
         {
             Console.ForegroundColor = (ConsoleColor)new Random().Next(1, 15);
             Console.Write(message);
             //Console.ForegroundColor = ConsoleColor.White;
-        }
-
-    }
-
-    public class AlarmClock
-    {
-        public ElapsedEventHandler? alarmEvent;
-        private readonly Timer timer;
-
-        public AlarmClock(DateTime alarmTime)
-        {
-            timer = new Timer();
-            timer.Elapsed += Timer_Elapsed;
-            double remaining = (alarmTime - DateTime.Now).TotalMilliseconds;
-            if (remaining < 0)
-            {
-                timer.Dispose();
-            }
-            else
-            {
-                timer.Interval = remaining;
-                timer.Start();
-                timer.AutoReset = false;
-            }
-
-        }
-
-        void Timer_Elapsed(object? sender, ElapsedEventArgs? e)
-        {
-            alarmEvent?.Invoke(this, e);
-            timer.Stop();
-            timer.Dispose();
         }
 
     }
