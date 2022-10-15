@@ -5,13 +5,13 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>Masjid - Mosque - مسجد Vector Animasi PNG (5).ico</ApplicationIcon>
     <NoWin32Manifest>true</NoWin32Manifest>
     <PackageIcon>Masjid - Mosque - مسجد Vector Animasi PNG (5).png</PackageIcon>
+    <ApplicationIcon>my icon.ICO</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Masjid - Mosque - مسجد Vector Animasi PNG (5).ico" />
+    <Content Include="my icon.ICO" />
   </ItemGroup>
 
   <ItemGroup>

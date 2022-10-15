@@ -70,7 +70,7 @@ namespace PrayerNotify
                         Console.CursorTop--;
                         Console.Write(ClearReturnToBegining);
                         message = $"Remaining time for {Prayer.salatIqama.Keys.ElementAt(i)} is {t:hh\\:mm\\:ss}";
-                        Console.Write(message);
+                        Console.Write(message + new string(' ', Console.BufferWidth - message.Length-1));
                         break;
                     }
                 }
