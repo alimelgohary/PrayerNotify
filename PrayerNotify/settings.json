@@ -2,5 +2,32 @@
   "lat": "",
   "lng": "",
   "method": 5,
-  "remindMeBefore":  5
+  "remindMeBefore": 5,
+  "iqama": [
+    {
+      "name": "Fajr",
+      "value": 0
+    },
+    {
+      "name": "Sunrise",
+      "value": 0
+    },
+    {
+      "name": "Dhuhr",
+      "value": 0
+    },
+    {
+      "name": "Asr",
+      "value": 0
+    },
+    {
+      "name": "Maghrib",
+      "value": 0
+    },
+    {
+      "name": "Isha",
+      "value": 0
+    }
+  ]
+
 }

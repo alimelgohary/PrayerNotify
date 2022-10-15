@@ -16,55 +16,15 @@ namespace PrayerNotify
         static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
         static DateTime dt;
         static readonly HttpClient client = new();
-        static string settingsPath = "settings.json";
+
         static async Task Main()
         {
-            Console.CursorVisible = false;
-            Settings s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(settingsPath));
-            string lat = s.Lat;
-            string lng = s.Lng; 
-            int method = s.Method;
-            int remindMeBefore = s.RemindMeBefore;
-            double dd;
-            if (lat == String.Empty || lng == String.Empty || method == 0)
-            {
-                Console.WriteLine("No settings present");
-            lat: Console.Write("Enter City Latitude: ");
-                lat = Console.ReadLine();
-                if (!double.TryParse(lat, out dd))
-                {
-                    goto lat;
-                }
-                s.Lat = lat;
+            string settingsPath = "settings.json";
 
-            lng: Console.Write("Enter City Longtuide: ");
-                lng = Console.ReadLine();
-                if (!double.TryParse(lat, out dd))
-                {
-                    goto lng;
-                }
-                s.Lng = lng;
-            method: Console.WriteLine("Methods: ");
-                Array.ForEach(Enum.GetNames(typeof(Settings.Methods)), x => Console.WriteLine($"\t\t{(int)Enum.Parse(typeof(Settings.Methods), x)} - {x}"));
-                Console.Write("Enter method number: ");
-                if (!int.TryParse(Console.ReadLine(), out method))
-                {
-                    goto method;
-                }
-                s.Method = method;
-
-            remind: Console.Write("Alarm me before Iqama by (min): ");
-                if (!int.TryParse(Console.ReadLine(), out remindMeBefore))
-                {
-                    goto remind;
-                }
-                s.RemindMeBefore = remindMeBefore;
-
-                File.WriteAllText(settingsPath, JsonSerializer.Serialize(s));
-            }
+            ReadWriteJson(settingsPath, out string lat, out string lng, out int method, out int remindMeBefore, out List<Settings.IqamaObject> iqama);
 
             dt = DateTime.Now;
-            //Root? r = await TryGetRootAsync("31.21452", "31.35798", (int)Methods.Egyptian_General_Authority_of_Survey);
+
             Root? r = await TryGetRootAsync(lat, lng, method);
 
             if (r == null || r?.code != 200)
@@ -76,7 +36,7 @@ namespace PrayerNotify
             int currentDay;
             var ishaTime = TimeOnly.Parse(r.data[dt.Day - 1].timings.Isha[..5]);
             DateTime ishaDateTime = new(dt.Year, dt.Month, dt.Day, ishaTime.Hour, ishaTime.Minute, ishaTime.Second);
-            if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(Prayer.salatIqama["Isha"] - remindMeBefore))  //Last iqama in day ocurred?
+            if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(iqama.Find(x=>x.Name == Prayer.salats[Prayer.salats.GetUpperBound(0)]).Value - remindMeBefore))  //Last iqama in day ocurred?
             {
                 currentDay = dt.Day + 1;
             }
@@ -87,19 +47,28 @@ namespace PrayerNotify
 
             Datum d = r.data[currentDay - 1];
 
-            Console.WriteLine($"{d.date.gregorian.weekday.en} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {d.date.readable} \\\\ Lat: {lat}, Lng: {lng}{Environment.NewLine} ");
+            ConsoleWriteLineColor($"{d.date.gregorian.weekday.en} {d.date.hijri.day} {hijriMonth[d.date.hijri.month.number]} {d.date.hijri.year} \\\\ {d.date.readable}");
+            ConsoleWriteLineColor("");
+            ConsoleWriteLineColor($"Lat: {lat}, Lng: {lng}, Method: {(Settings.Methods)method}, Remind Me {remindMeBefore} Minutes Before Iqama");
+            ConsoleWriteLineColor("");
+            foreach (var item in iqama)
+            {
+                ConsoleWriteColor($"{item.Name}: {item.Value} minutes, ");
+            }
+            ConsoleWriteLineColor($"{Environment.NewLine}");
 
-            Prayer[] prayers = Prayer.GetPrayers(d);
+            Prayer[] prayers = Prayer.GetPrayers(d, Settings.ListToDict(iqama));
 
             Prayer.PrintTimes(prayers);
 
-            Console.WriteLine(Environment.NewLine);
+            ConsoleWriteLineColor(Environment.NewLine);
 
             AlarmClock[] alarms = new AlarmClock[12];
 
             CreateAlarmsForPrayerAndIqama(prayers, alarms, remindMeBefore);
 
             // Remaining time for Salat
+            Console.CursorVisible = false;
             Timer timer = new();
             timer.Elapsed += new ElapsedEventHandler((sender, e) =>
             {
@@ -112,9 +81,9 @@ namespace PrayerNotify
                     if (t.TotalSeconds > 0)
                     {
                         Console.CursorTop--;
-                        Console.Write(ClearReturnToBegining);
-                        message = $"Remaining time for {Prayer.salatIqama.Keys.ElementAt(i)} is {t:hh\\:mm\\:ss}";
-                        Console.Write(message + new string(' ', Console.BufferWidth - message.Length - 1));
+                        ConsoleWriteColor(ClearReturnToBegining);
+                        message = $"Remaining time for {iqama[i].Name} is {t:hh\\:mm\\:ss}";
+                        ConsoleWriteColor(message + new string(' ', Console.BufferWidth - message.Length - 1));
                         break;
                     }
                 }
@@ -125,6 +94,79 @@ namespace PrayerNotify
             Console.ReadLine();
 
         }
+
+        private static void ReadWriteJson(string path, out string lat, out string lng, out int method, out int remindMeBefore, out List<Settings.IqamaObject> iqama)
+        {
+            Settings s = new Settings();
+            try
+            {
+                s = Settings.FromJson(path);
+
+            }
+            catch (Exception e)
+            {
+                ConsoleWriteLineColor("Wrong Json Format");
+                ConsoleWriteLineColor(e.Message);
+            }
+
+            lat = s.Lat;
+            lng = s.Lng;
+            method = s.Method;
+            iqama = s.Iqama;
+            remindMeBefore = s.RemindMeBefore;
+            double dd;
+            if (lat == string.Empty || lng == string.Empty || method == 0 || iqama.Count != Prayer.salats.Length)
+            {
+                ConsoleWriteLineColor("No settings present");
+            lat: ConsoleWriteColor("Enter City Latitude: ");
+                lat = Console.ReadLine();
+                if (!double.TryParse(lat, out dd))
+                {
+                    goto lat;
+                }
+                s.Lat = lat;
+
+            lng: ConsoleWriteColor("Enter City Longtuide: ");
+                lng = Console.ReadLine();
+                if (!double.TryParse(lat, out dd))
+                {
+                    goto lng;
+                }
+                s.Lng = lng;
+            method: ConsoleWriteLineColor("Methods: ");
+                Array.ForEach(Enum.GetNames(typeof(Settings.Methods)), x => ConsoleWriteLineColor($"\t\t{(int)Enum.Parse(typeof(Settings.Methods), x)} - {x}"));
+                ConsoleWriteColor("Enter method number: ");
+                if (!int.TryParse(Console.ReadLine(), out method))
+                {
+                    goto method;
+                }
+                s.Method = method;
+
+                ConsoleWriteLineColor("Enter Iqama for each salat in Minutes");
+                iqama = new List<Settings.IqamaObject>();
+                for (int i = 0; i < Prayer.salats.Length; i++)
+                {
+                Iqamas: ConsoleWriteColor($"\t\t{Prayer.salats[i]} : ");
+                    if (!int.TryParse(Console.ReadLine(), out int minutes))
+                    {
+                        goto Iqamas;
+                    }
+                    iqama.Add(new Settings.IqamaObject() { Name = Prayer.salats[i], Value = minutes });
+                }
+                s.Iqama = iqama;
+
+            remind: ConsoleWriteColor("Alarm me before Iqama by (minutes): ");
+                if (!int.TryParse(Console.ReadLine(), out remindMeBefore))
+                {
+                    goto remind;
+                }
+                s.RemindMeBefore = remindMeBefore;
+
+                Settings.ToJsonFile(path, s);
+                Console.Clear();
+            }
+        }
+
         static async Task<Root?> TryGetRootAsync(string lat, string lng, int method)
         {
             var dt = DateTime.Now;
@@ -189,8 +231,8 @@ namespace PrayerNotify
 
         static void ErrorHappened(string message)
         {
-            Console.WriteLine(message);
-            Console.WriteLine("Press R to retry or any key to Exit");
+            ConsoleWriteLineColor(message);
+            ConsoleWriteLineColor("Press R to retry or any key to Exit");
             ConsoleKey k = Console.ReadKey().Key;
             if (k == ConsoleKey.R)
             {
@@ -208,8 +250,16 @@ namespace PrayerNotify
             Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
-
-
+        static void ConsoleWriteLineColor(string message)
+        {
+            ConsoleWriteColor(message + '\n');
+        }
+        static void ConsoleWriteColor(string message)
+        {
+            Console.ForegroundColor = (ConsoleColor)new Random().Next(1, 15);
+            Console.Write(message);
+            //Console.ForegroundColor = ConsoleColor.White;
+        }
 
     }
 
