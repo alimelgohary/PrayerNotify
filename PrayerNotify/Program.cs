@@ -20,12 +20,8 @@ namespace PrayerNotify
             string settingsPath = "settings.json";
             DateTime dt = DateTime.Now;
 
-            var settings = JsonToSettings(settingsPath);
+            var settings = Settings.JsonToSettings(settingsPath);
             Settings.ToJsonFile(settingsPath, settings);
-
-
-            //var iqamaList = settings.Iqama;
-            //int remindMeBefore = settings.RemindMeBefore;
 
             ResponseRoot? r = await TryGetRootAsync(settings.Lat, settings.Lng, settings.Method);
 
@@ -57,14 +53,12 @@ namespace PrayerNotify
 
             Printer.PrintPrayerTimes(prayers);
 
-
             var alarms = CreateAlarmsForPrayerAndIqama(prayers, settings.RemindMeBefore);
             RemainingForSalat(settings.Iqama, prayers);
 
             Console.ReadLine();
 
         }
-
         static void RemainingForSalat(List<Settings.IqamaObject> iqamaList, Prayer[] prayers)
         {
             // Remaining time for Salat
@@ -90,87 +84,6 @@ namespace PrayerNotify
             });
             timer.Interval = 1000;
             timer.Start();
-        }
-
-
-        static Settings JsonToSettings(string path)
-        {
-            Settings settings = new();
-            try
-            {
-                settings = Settings.FromJson(path);
-            }
-            catch (Exception e)
-            {
-                Printer.ConsoleWriteLineColor("Wrong Json Format");
-                Printer.ConsoleWriteLineColor(e.Message);
-            }
-
-            string lat = settings.Lat;
-            string lng = settings.Lng;
-            int method = settings.Method;
-            List<Settings.IqamaObject> iqama = settings.Iqama;
-            
-            if (lat == string.Empty || lng == string.Empty || method == 0 || iqama.Count != Prayer.SALATS.Length)
-            {
-                settings = GetSettingsFromUser();
-
-            }
-            return settings;
-        }
-        static Settings GetSettingsFromUser()
-        {
-            Settings settings = new();
-
-            Printer.ConsoleWriteLineColor("No settings present");
-        lat: Printer.ConsoleWriteColor("Enter City Latitude: ");
-            string lat = Console.ReadLine();
-            if (!double.TryParse(lat, out double dd))
-            {
-                goto lat;
-            }
-            settings.Lat = lat;
-
-        lng: Printer.ConsoleWriteColor("Enter City Longtuide: ");
-            string lng = Console.ReadLine();
-            if (!double.TryParse(lat, out dd))
-            {
-                goto lng;
-            }
-            settings.Lng = lng;
-
-        method: Printer.ConsoleWriteLineColor("Methods: ");
-            Array.ForEach(Enum.GetNames(typeof(Settings.Methods)), x => Printer.ConsoleWriteLineColor($"\t\t{(int)Enum.Parse(typeof(Settings.Methods), x)} - {x}"));
-            Printer.ConsoleWriteColor("Enter method number: ");
-            if (!int.TryParse(Console.ReadLine(), out int method))
-            {
-                goto method;
-            }
-            settings.Method = method;
-
-            Printer.ConsoleWriteLineColor("Enter Iqama for each salat in Minutes");
-            var iqama = new List<Settings.IqamaObject>();
-            for (int i = 0; i < Prayer.SALATS.Length; i++)
-            {
-            Iqamas: Printer.ConsoleWriteColor($"\t\t{Prayer.SALATS[i]} : ");
-                if (!int.TryParse(Console.ReadLine(), out int minutes))
-                {
-                    goto Iqamas;
-                }
-                iqama.Add(new Settings.IqamaObject() { Name = Prayer.SALATS[i], Value = minutes });
-            }
-            settings.Iqama = iqama;
-
-        remind: Printer.ConsoleWriteColor("Alarm me before Iqama by (minutes): ");
-            if (!int.TryParse(Console.ReadLine(), out int remindMeBefore))
-            {
-                goto remind;
-            }
-            settings.RemindMeBefore = remindMeBefore;
-
-            Console.Clear();
-
-            return settings;
         }
         static async Task<ResponseRoot?> TryGetRootAsync(string lat, string lng, int method)
         {
