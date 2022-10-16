@@ -13,17 +13,16 @@ namespace PrayerNotify
     internal class Program
     {
         static readonly string[] hijriMonth = new string[13] { "", "Muharram", "Safar", "Rabi3 Awal", "Rabi3 Thany", "Gamad Awal", "Gamad Thany", "Ragab", "Sha3ban", "Ramadan", "Shawal", "Zo Elqe3da", "Zo El7egga" };
-        static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
-        static DateTime dt;
-        static readonly HttpClient client = new();
+        static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString(); 
+        
 
         static async Task Main()
         {
             string settingsPath = "settings.json";
-
+            
             ReadWriteJson(settingsPath, out string lat, out string lng, out int method, out int remindMeBefore, out List<Settings.IqamaObject> iqama);
 
-            dt = DateTime.Now;
+            DateTime dt = DateTime.Now;
 
             Root? r = await TryGetRootAsync(lat, lng, method);
 
@@ -184,7 +183,7 @@ namespace PrayerNotify
         }
         static async Task<Root?> GetRootAsync(string path)
         {
-
+            HttpClient client = new();
             Root? root = null;
             HttpResponseMessage response = await client.GetAsync(path);
             if (response.IsSuccessStatusCode)
