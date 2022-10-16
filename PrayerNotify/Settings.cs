@@ -45,7 +45,7 @@ namespace PrayerNotify
 
         public class IqamaObject
         {
-            string[] salats = Prayer.salats;
+            string[] salats = Prayer.SALATS;
             string name;
             int val;
             public string Name
