@@ -100,7 +100,7 @@ public class Params
     public double Isha { get; set; }
 }
 
-public class Root
+public class ResponseRoot
 {
     public int code { get; set; }
     public string status { get; set; }

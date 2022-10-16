@@ -53,5 +53,6 @@ internal class Prayer
         {
             Program.ConsoleWriteLineColor($"\t\t{item.Name}: {item.Time:hh:mm tt}");
         }
+        ConsoleWriteLineColor(Environment.NewLine);
     }
 }
