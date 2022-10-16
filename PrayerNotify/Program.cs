@@ -110,8 +110,7 @@ namespace PrayerNotify
             string lng = settings.Lng;
             int method = settings.Method;
             List<Settings.IqamaObject> iqama = settings.Iqama;
-            int remindMeBefore = settings.RemindMeBefore;
-
+            
             if (lat == string.Empty || lng == string.Empty || method == 0 || iqama.Count != Prayer.SALATS.Length)
             {
                 settings = GetSettingsFromUser();
@@ -236,7 +235,6 @@ namespace PrayerNotify
                 Console.Beep();
             }
         }
-
         static void ErrorHappened(string message)
         {
             Printer.ConsoleWriteLineColor(message);
