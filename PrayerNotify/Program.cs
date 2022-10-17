@@ -13,7 +13,7 @@ namespace PrayerNotify
 {
     internal class Program
     {
-        static readonly string ClearReturnToBegining = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
+        static readonly string CLEAR_RETURN_TO_BEGINING = new StringBuilder().Append('\r').Append(' ', Console.BufferWidth).Append('\r').ToString();
 
         static async Task Main()
         {
@@ -21,13 +21,18 @@ namespace PrayerNotify
             DateTime dt = DateTime.Now;
 
             var settings = Settings.JsonToSettings(settingsPath);
-            Settings.ToJsonFile(settingsPath, settings);
+            
 
             ResponseRoot? r = await TryGetRootAsync(settings.Lat, settings.Lng, settings.Method);
 
-            if (r == null || r?.code != 200)
+            if (r == null)
             {
-                ErrorHappened("Something Went Wrong");
+                FatalErrorHappened("R = null");
+                return;
+            }
+            if (r?.code != 200)
+            {
+                FatalErrorHappened($"Response Code: {r?.code} Status: {r?.status}");
                 return;
             }
 
@@ -75,7 +80,7 @@ namespace PrayerNotify
                     if (t.TotalSeconds > 0)
                     {
                         Console.CursorTop--;
-                        Printer.ConsoleWriteColor(ClearReturnToBegining);
+                        Printer.ConsoleWriteColor(CLEAR_RETURN_TO_BEGINING);
                         message = $"Remaining time for {iqamaList[i].Name} is {t:hh\\:mm\\:ss}";
                         Printer.ConsoleWriteColor(message + new string(' ', Console.BufferWidth - message.Length - 1));
                         break;
@@ -96,7 +101,7 @@ namespace PrayerNotify
             }
             catch (Exception e)
             {
-                ErrorHappened(e.Message);
+                FatalErrorHappened(e.Message);
             }
             return r;
         }
@@ -148,9 +153,9 @@ namespace PrayerNotify
                 Console.Beep();
             }
         }
-        static void ErrorHappened(string message)
+        static void FatalErrorHappened(string message)
         {
-            Printer.ConsoleWriteLineColor(message);
+            Printer.ConsoleWriteLineColor($"Something went wrong: {message}");
             Printer.ConsoleWriteLineColor("Press R to retry or any key to Exit");
             ConsoleKey k = Console.ReadKey().Key;
             if (k == ConsoleKey.R)

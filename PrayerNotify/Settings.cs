@@ -12,10 +12,7 @@ namespace PrayerNotify
         
         public string Lat { get => lat; set => lat = value; }
         public string Lng { get => lng; set => lng = value; }
-
-        int[] methods = (int[])Enum.GetValues(typeof(Methods));
-
-        public int Method { get => method; set => method = methods.Contains(value) ? value : 5; }
+        public int Method { get => method; set => method = METHODS.Contains(value) ? value : 5; }
         public int RemindMeBefore { get => remindMeBefore; set => remindMeBefore = value < 0 ? 0 : value; }
         public List<IqamaObject> Iqama { get => iqama; set => iqama = value; }
 
@@ -87,11 +84,12 @@ namespace PrayerNotify
             string lat = settings.Lat;
             string lng = settings.Lng;
             int method = settings.Method;
-            List<Settings.IqamaObject> iqama = settings.Iqama;
+            List<IqamaObject> iqama = settings.Iqama;
 
-            if (lat == string.Empty || lng == string.Empty || method == 0 || iqama.Count != Prayer.SALATS.Length)
+            if (string.IsNullOrEmpty(lat) || string.IsNullOrEmpty(lng) || !METHODS.Contains(method) || iqama == null || iqama.Count != Prayer.SALATS.Length)
             {
                 settings = GetSettingsFromUser();
+                ToJsonFile(path, settings);
             }
             return settings;
         }
@@ -106,7 +104,7 @@ namespace PrayerNotify
             {
                 goto lat;
             }
-            settings.Lat = lat;
+            settings.lat = lat;
 
         lng: Printer.ConsoleWriteColor("Enter City Longtuide: ");
             string lng = Console.ReadLine();
@@ -114,7 +112,7 @@ namespace PrayerNotify
             {
                 goto lng;
             }
-            settings.Lng = lng;
+            settings.lng = lng;
 
         method: Printer.ConsoleWriteLineColor("Methods: ");
             Array.ForEach(Enum.GetNames(typeof(Settings.Methods)), x => Printer.ConsoleWriteLineColor($"\t\t{(int)Enum.Parse(typeof(Settings.Methods), x)} - {x}"));
@@ -162,6 +160,7 @@ namespace PrayerNotify
         int method;
         int remindMeBefore;
         List<IqamaObject> iqama;
+        static int[] METHODS = (int[])Enum.GetValues(typeof(Methods));
     }
 
 
