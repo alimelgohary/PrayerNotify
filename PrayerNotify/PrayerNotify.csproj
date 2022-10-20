@@ -8,6 +8,8 @@
     <NoWin32Manifest>true</NoWin32Manifest>
     <PackageIcon>Masjid - Mosque - مسجد Vector Animasi PNG (5).png</PackageIcon>
     <ApplicationIcon>my icon.ICO</ApplicationIcon>
+    <AssemblyVersion>1.1.2</AssemblyVersion>
+    <FileVersion>1.1.2</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -18,7 +18,6 @@ namespace PrayerNotify
 
         public enum Methods
         {
-            Shia_Ithna_Ansari = 0,
             University_of_Islamic_Sciences_Karachi = 1,
             Islamic_Society_of_North_America = 2,
             Muslim_World_League = 3,
@@ -56,6 +55,10 @@ namespace PrayerNotify
                 }
             }
             public int Value { get => val; set => val = (value < 0) ? 0 : value; }
+            public override string ToString()
+            {
+                return $"{Name}: {Value} minutes";
+            }
         }
 
         public static Dictionary<string, int> ListToDict(List<IqamaObject> list)

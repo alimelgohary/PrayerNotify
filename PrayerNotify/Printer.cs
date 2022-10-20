@@ -27,10 +27,9 @@ static class Printer
         ConsoleWriteLineColor();
         ConsoleWriteLineColor($"Lat: {prayerData.meta.latitude}, Lng: {prayerData.meta.longitude}, Method: {prayerData.meta.method.name}, Remind Me {settings.RemindMeBefore} Minutes Before Iqama");
         ConsoleWriteLineColor();
-        foreach (var item in settings.Iqama)
-        {
-            ConsoleWriteColor($"{item.Name}: {item.Value} minutes, ");
-        }
+        
+        ConsoleWriteColor(string.Join(", ", settings.Iqama));
+        
         ConsoleWriteLineColor($"{Environment.NewLine}");
     }
 
