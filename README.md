@@ -8,8 +8,6 @@ It also reminds user before prayer iqama (إقامة الصلاة) by some speci
 
 It's written in C# .Net 6
 
-You may need to Download [.NET Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
----
 
 ## Features
 
