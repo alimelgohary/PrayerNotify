@@ -23,7 +23,7 @@ namespace PrayerNotify
             var settings = Settings.JsonToSettings(settingsPath);
             
 
-            ResponseRoot? r = await TryGetRootAsync(settings.Lat, settings.Lng, settings.Method);
+            newRequest: ResponseRoot? r = await TryGetRootAsync(settings.Lat, settings.Lng, settings.Method, dt);
 
             if (r == null)
             {
@@ -40,10 +40,15 @@ namespace PrayerNotify
             var ishaTime = TimeOnly.Parse(r.data[dt.Day - 1].timings.Isha[..5]);
             DateTime ishaDateTime = new(dt.Year, dt.Month, dt.Day, ishaTime.Hour, ishaTime.Minute, ishaTime.Second);
 
-            //Last iqama in day ocurred?
+            //Last alarm in day ocurred?
             if ((DateTime.Now - ishaDateTime) > TimeSpan.FromMinutes(settings.Iqama.Find(x => x.Name == Prayer.SALATS[Prayer.SALATS.GetUpperBound(0)]).Value - settings.RemindMeBefore))
             {
                 currentDay = dt.Day + 1;
+                if(dt.IsLastDayOfMonth()) // last isha in the month ocurred
+                {
+                    dt = dt.AddDays(1);
+                    goto newRequest;
+                }
             }
             else
             {
@@ -90,9 +95,8 @@ namespace PrayerNotify
             timer.Interval = 1000;
             timer.Start();
         }
-        static async Task<ResponseRoot?> TryGetRootAsync(string lat, string lng, int method)
+        static async Task<ResponseRoot?> TryGetRootAsync(string lat, string lng, int method, DateTime dt)
         {
-            var dt = DateTime.Now;
             string request = @$"http://api.aladhan.com/v1/calendar?latitude={lat}&longitude={lng}&method={method}&month={dt.Month}&year={dt.Year}";
             ResponseRoot? r = null;
             try
@@ -129,7 +133,7 @@ namespace PrayerNotify
                 int iqamaRemaining = item.Iqama != 0
                                    ? item.Iqama - remindMeBefore
                                    : 0;
-                DateTime beforeIqama = item.Time.AddMinutes(iqamaRemaining); // time before iqama by 5 min
+                DateTime beforeIqama = item.Time.AddMinutes(iqamaRemaining); // time before iqama by X minutes
 
                 j++;
                 alarms[j] = new AlarmClock(beforeIqama);
@@ -174,6 +178,13 @@ namespace PrayerNotify
             Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
-
+       
+    }
+    public static class Extensions
+    {
+        public static bool IsLastDayOfMonth(this DateTime dt)
+        {
+            return dt.AddDays(1).Day == 1;
+        }
     }
 }
